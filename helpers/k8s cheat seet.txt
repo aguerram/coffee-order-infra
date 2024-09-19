@@ -1,0 +1,62 @@
+# Most Useful kubectl Commands
+
+## Cluster Management
+- `kubectl cluster-info`: Display cluster info
+- `kubectl config view`: Show kubeconfig settings
+- `kubectl config get-contexts`: List all contexts in kubeconfig
+- `kubectl config use-context <context>`: Switch to a different context
+
+## Resource Management
+- `kubectl get <resource>`: List resources (pods, services, deployments, etc.)
+  - Common options: 
+    - `-o wide`: Output in plain-text format with additional information
+    - `-o yaml`: Output in YAML format
+    - `-o json`: Output in JSON format
+    - `--all-namespaces` or `-A`: List across all namespaces
+- `kubectl describe <resource> <name>`: Show detailed information about a resource
+- `kubectl create -f <filename>`: Create resource(s) from a file
+- `kubectl apply -f <filename>`: Apply changes to resources from a file
+- `kubectl delete <resource> <name>`: Delete resources
+
+## Deployments
+- `kubectl create deployment <name> --image=<image>`: Create a deployment
+- `kubectl scale deployment <name> --replicas=<number>`: Scale a deployment
+- `kubectl rollout status deployment <name>`: Check rollout status
+- `kubectl rollout history deployment <name>`: View rollout history
+- `kubectl rollout undo deployment <name>`: Rollback to previous version
+
+## Pods
+- `kubectl get pods`: List all pods in the current namespace
+- `kubectl logs <pod-name>`: Fetch logs of a pod
+- `kubectl exec -it <pod-name> -- <command>`: Execute a command in a pod
+- `kubectl port-forward <pod-name> <local-port>:<pod-port>`: Forward a local port to a pod
+
+## Services
+- `kubectl expose deployment <name> --port=<port> --type=<type>`: Expose a deployment as a service
+- `kubectl get endpoints`: List service endpoints
+
+## Namespaces
+- `kubectl create namespace <name>`: Create a namespace
+- `kubectl get namespaces`: List all namespaces
+- `kubectl config set-context --current --namespace=<name>`: Switch to a namespace
+
+## ConfigMaps and Secrets
+- `kubectl create configmap <name> --from-file=<path>`: Create a ConfigMap from a file
+- `kubectl create secret generic <name> --from-literal=<key>=<value>`: Create a Secret
+
+## Troubleshooting
+- `kubectl get events`: View cluster events
+- `kubectl top node`: Show CPU/Memory usage of nodes
+- `kubectl top pod`: Show CPU/Memory usage of pods
+- `kubectl explain <resource>`: Get documentation of resource manifests
+
+## Useful Options
+- `--namespace=<namespace>` or `-n <namespace>`: Specify the namespace
+- `--watch` or `-w`: Watch for changes
+- `--selector=<selector>` or `-l <selector>`: Filter resources by label
+
+Remember to use `kubectl --help` or `kubectl <command> --help` for more information on specific commands.
+
+
+#create secret
+kubectl create secret tls harbor-cert --key $HOME/certs/tls.key --cert $HOME/certs/tls.crt -n harbor

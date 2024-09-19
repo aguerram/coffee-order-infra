@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service-depl
+  namespace: ns-coffee-order-demo-dev
+  labels:
+    kubernetes.io/app: inventory-service
+    kubernetes.io/component: inventory-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      kubernetes.io/app: inventory-service
+      kubernetes.io/component: inventory-service
+  template:
+    metadata:
+      labels:
+        kubernetes.io/app: inventory-service
+        kubernetes.io/component: inventory-service
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-database: "secrets/data/coffee-demo/inventory-service"
+        vault.hashicorp.com/agent-inject-template-database: |
+          {{- with secret "secrets/data/coffee-demo/inventory-service" -}}
+          {{- range $k, $v := .Data.data }}
+          export {{ $k }}="{{ $v }}"
+          {{- end }}
+          {{- end }}
+        vault.hashicorp.com/role: "inventory-service"
+        vault.hashicorp.com/auth-type: "approle"
+        vault.hashicorp.com/auth-path: "auth/approle"
+        # vault.hashicorp.com/namespace: "myvault/coffee-order-dev"
+
+    spec:
+      containers:
+      - name: inventory-service
+        image: demo.goharbor.io/coffee-order-demo/inventory-service:IMAGE_TAG
+        ports:
+        - containerPort: 8080
+        env:
+          - name: PORT
+            value: "8080"
+          - name: VAULT_ADDR
+            value: "http://127.0.0.1:8200"
+          - name: VAULT_ROLE_ID
+            valueFrom:
+              secretKeyRef:
+                name: inventory-approle-dev
+                key: role_id
+          - name: VAULT_SECRET_ID
+            valueFrom:
+              secretKeyRef:
+                name: inventory-approle-dev
+                key: secret_id
+        volumeMounts:
+          - name: secrets
+            mountPath: /vault/secrets
+            readOnly: true
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory

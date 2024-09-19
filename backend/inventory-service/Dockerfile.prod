@@ -1,0 +1,9 @@
+FROM alpine:3.14
+
+WORKDIR /app
+
+# Copy the pre-built binary
+COPY tmp/inventory-service .
+
+# Set the entry point to run the application
+ENTRYPOINT ["./inventory-service"]

@@ -1,0 +1,16 @@
+# step 1: create app role and get roleid and secretid
+
+execute the following command to create app role and get roleid and secretid
+
+```
+VAULT_TOKEN="hvs.xxx" VAULT_ADDR="http://127.0.0.1:8200" go run create_role_id_and_secret_id.go
+```
+
+# step 2: create kubectl secret
+
+```
+kubectl create secret generic inventory-approle \
+  --namespace=ns-coffee-order \
+  --from-literal=role_id=$ROLE_ID \
+  --from-literal=secret_id=$SECRET_ID
+```
