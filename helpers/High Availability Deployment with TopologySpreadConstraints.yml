@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: high-availability-app
+  namespace: ns-coffee-order-demo-dev
+spec:
+  replicas: 3  # Adjust based on your cluster size
+  selector:
+    matchLabels:
+      app: high-availability-app
+  template:
+    metadata:
+      labels:
+        app: high-availability-app
+    spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: high-availability-app
+      containers:
+      - name: app-container
+        image: your-app-image:tag
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
