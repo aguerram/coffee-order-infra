@@ -60,3 +60,10 @@ Remember to use `kubectl --help` or `kubectl <command> --help` for more informat
 
 #create secret
 kubectl create secret tls harbor-cert --key $HOME/certs/tls.key --cert $HOME/certs/tls.crt -n harbor
+
+
+
+#Monitor the rollout with
+kubectl rollout status deployment/high-availability-app.
+#If issues occur, you can easily rollback: 
+kubectl rollout undo deployment/high-availability-app.
