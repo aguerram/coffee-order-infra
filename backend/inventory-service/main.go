@@ -2,28 +2,45 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
 	"github.com/aguerram/coffee-order-app/inventory-service/internal"
+	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+type Env struct {
+	DSN  string `validate:"required"`
+	PORT string `validate:"required"`
+}
+
 func main() {
 	godotenv.Load()
+	validate := validator.New()
+	env := Env{
+		DSN:  os.Getenv("DSN"),
+		PORT: os.Getenv("PORT"),
+	}
 
-	db, err := gorm.Open(postgres.Open(os.Getenv("DSN")), &gorm.Config{})
+	err := validate.Struct(env)
 	if err != nil {
-		panic("failed to connect database")
+		log.Panicf("failed to validate environment variables: %v", err)
+	}
+
+	db, err := gorm.Open(postgres.Open(env.DSN), &gorm.Config{})
+	if err != nil {
+		log.Panicf("failed to connect database: %v", err)
 	}
 
 	// Auto Migrate the Coffee model
 	err = internal.AutoMigrate(db)
 	if err != nil {
-		panic("failed to perform auto migration")
+		log.Panicf("failed to perform auto migration: %v", err)
 	}
 	fmt.Println("Database connection established and migrations completed")
 
@@ -37,7 +54,7 @@ func main() {
 
 	// Start the server in a goroutine
 	go func() {
-		if err := app.Listen(fmt.Sprintf(":%s", os.Getenv("PORT"))); err != nil {
+		if err := app.Listen(fmt.Sprintf(":%s", env.PORT)); err != nil {
 			fmt.Printf("Server error: %v\n", err)
 		}
 	}()

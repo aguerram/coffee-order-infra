@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import CoffeeIndex from './CoffeeIndex.tsx'
 import PurchaseIndex from './PurchaseIndex.tsx'
+import './index.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
