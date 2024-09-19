@@ -67,3 +67,32 @@ kubectl create secret tls harbor-cert --key $HOME/certs/tls.key --cert $HOME/cer
 kubectl rollout status deployment/high-availability-app.
 #If issues occur, you can easily rollback: 
 kubectl rollout undo deployment/high-availability-app.
+
+kubectl rollout Subcommands:
+a. kubectl rollout status:
+
+Usage: kubectl rollout status deployment/your-deployment-name
+This command shows the current status of a rollout.
+It's useful for monitoring the progress of an update in real-time.
+
+b. kubectl rollout history:
+
+Usage: kubectl rollout history deployment/your-deployment-name
+Shows the revision history of a deployment.
+You can see past versions and their revision numbers.
+
+c. kubectl rollout undo:
+
+Usage: kubectl rollout undo deployment/your-deployment-name
+Rolls back to the previous version of the deployment.
+You can also specify a revision: kubectl rollout undo deployment/your-deployment-name --to-revision=2
+
+d. kubectl rollout pause:
+
+Usage: kubectl rollout pause deployment/your-deployment-name
+Pauses a deployment. Further updates won't trigger new rollouts until resumed.
+
+e. kubectl rollout resume:
+
+Usage: kubectl rollout resume deployment/your-deployment-name
+Resumes a paused deployment.
