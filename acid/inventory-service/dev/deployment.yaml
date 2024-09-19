@@ -17,21 +17,30 @@ spec:
       labels:
         kubernetes.io/app: inventory-service
         kubernetes.io/component: inventory-service
-      annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/agent-inject-secret-database: "secrets/data/coffee-demo/inventory-service"
-        vault.hashicorp.com/agent-inject-template-database: |
-          {{- with secret "secrets/data/coffee-demo/inventory-service" -}}
-          {{- range $k, $v := .Data.data }}
-          export {{ $k }}="{{ $v }}"
-          {{- end }}
-          {{- end }}
-        vault.hashicorp.com/role: "inventory-service"
-        vault.hashicorp.com/auth-type: "approle"
-        vault.hashicorp.com/auth-path: "auth/approle"
-        # vault.hashicorp.com/namespace: "myvault/coffee-order-dev"
-
     spec:
+      shareProcessNamespace: true
+      initContainers:
+      - name: vault-agent-init
+        image: hashicorp/vault:1.15.4
+        args:
+        - agent
+        - -config=/vault/config/vault-agent-config.hcl
+        - -exit-after-auth
+        env:
+        - name: VAULT_LOG_LEVEL
+          value: info
+        - name: VAULT_LOG_FORMAT
+          value: standard
+        volumeMounts:
+        - name: vault-config
+          mountPath: /vault/config
+        - name: vault-token
+          mountPath: /home/vault
+        - name: vault-secrets
+          mountPath: /vault/secrets
+        - name: vault-cache
+          mountPath: /vault/agent-cache
+
       containers:
       - name: inventory-service
         image: demo.goharbor.io/coffee-order-demo/inventory-service:IMAGE_TAG
@@ -40,23 +49,90 @@ spec:
         env:
           - name: PORT
             value: "8080"
-          - name: VAULT_ADDR
-            value: "http://127.0.0.1:8200"
-          - name: VAULT_ROLE_ID
-            valueFrom:
-              secretKeyRef:
-                name: inventory-approle-dev
-                key: role_id
-          - name: VAULT_SECRET_ID
-            valueFrom:
-              secretKeyRef:
-                name: inventory-approle-dev
-                key: secret_id
         volumeMounts:
-          - name: secrets
-            mountPath: /vault/secrets
-            readOnly: true
+        - name: vault-secrets
+          mountPath: /vault/secrets
+          readOnly: true
+      - name: vault-agent
+        image: hashicorp/vault:1.15.4
+        args:
+        - agent
+        - -config=/vault/config/vault-agent-config.hcl
+        env:
+        - name: VAULT_LOG_LEVEL
+          value: info
+        - name: VAULT_LOG_FORMAT
+          value: standard
+        volumeMounts:
+        - name: vault-config
+          mountPath: /vault/config
+        - name: vault-token
+          mountPath: /home/vault
+        - name: vault-secrets
+          mountPath: /vault/secrets
+        - name: vault-cache
+          mountPath: /vault/agent-cache
       volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
+      - name: vault-config
+        configMap:
+          name: vault-agent-config
+      - name: vault-token
+        emptyDir: {}
+      - name: vault-secrets
+        emptyDir: 
+          medium: Memory
+      - name: vault-cache
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-agent-config
+  namespace: ns-coffee-order-demo-dev
+data:
+  vault-agent-config.hcl: |
+    pid_file = "/home/vault/.pid"
+    
+    auto_auth {
+      method "kubernetes" {
+        mount_path = "auth/kubernetes"
+        # namespace = "myvault/coffee-order-dev"
+        config = {
+          role = "inventory-service-role"
+        }
+      }
+      
+      sink "file" {
+        config = {
+          path = "/home/vault/.vault-token"
+        }
+      }
+    }
+    
+    cache {
+      use_auto_auth_token = "true"    
+      persist "kubernetes" {
+        path = "/vault/agent-cache"
+      }
+    }
+    
+    listener "tcp" {
+      address = "127.0.0.1:8200"
+      tls_disable = true
+    }
+    
+    vault {
+      address = "http://127.0.0.1:8200"
+      ca_cert = "/etc/pki/ca-trust/source/anchors/unipass-server.pem"
+    }
+    
+    template {
+      destination = "/vault/secrets/config.env"
+      contents = <<EOT
+      {{- with secret "secrets/data/coffee-demo/inventory-service" }}
+      export DSN={{ .Data.DSN }}
+      {{ end }}
+      EOT
+      command = "/bin/sh -c \"kill -TERM $(pidof java) || true\""
+    }
